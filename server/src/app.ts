@@ -1,11 +1,17 @@
+import cors from "cors";
 import express from "express";
-import appConfig from "./config.js";
+import appConfig from "./config";
 
 import { GoogleGenAI } from "@google/genai";
 
 const app = express();
 
 app.use(express.json());
+app.use(
+  cors({
+    origin: appConfig.ALLOWED_ORIGINS,
+  })
+);
 
 app.get("/_status", (req, res) => {
   res.send("OK");
@@ -151,7 +157,7 @@ You:
 User: "What's the difference between the X1 Carbon Gen 10 and the T14 Gen 3?"
 
 You: "The ThinkPad X1 Carbon Gen 10 is a premium ultrabook, significantly lighter and often featuring higher-resolution OLED displays, like the 14-inch WQUXGA OLED on the model we have, compared to the T14 Gen 3's FHD IPS. The X1 Carbon also typically offers more advanced processors and more RAM, with our X1 Carbon Gen 10 model having an Intel Core i7-1280P and 32GB LPDDR5 RAM, while the T14 Gen 3 has an Intel Core i7-1260P and 16GB DDR4 RAM. The X1 Carbon Gen 10 is priced higher at $2199.99 compared to the T14 Gen 3's $1499.99. Both are excellent business laptops, but the X1 Carbon is designed for those who prioritize portability and top-tier features."
-`
+`,
     },
     contents: message,
   });
