@@ -1,82 +1,38 @@
-import { useState } from "react";
-import http from "@/config/http";
-
-type Message = {
-  id: string;
-  text: string;
-  sender: "user" | "bot";
-  timestamp: Date;
-};
+import MarkdownRenderer from "./MarkdownRenderer";
+import { useMessages, useChat } from "@/hooks";
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: "Hello! I'm BongoDevElectronics, your Lenovo ThinkPad specialist. How can I help you today?",
-      sender: "bot",
-      timestamp: new Date(),
-    },
-  ]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputMessage,
-      sender: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputMessage("");
-    setIsLoading(true);
-
-    try {
-      const response = await http.post("/chat", { message: inputMessage });
-      const data = response.data;
-
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: data.message,
-        sender: "bot",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Sorry, I encountered an error. Please try again.",
-        sender: "bot",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
+  const messagesHook = useMessages();
+  const { messages, clearMessages } = messagesHook;
+  const {
+    inputMessage,
+    setInputMessage,
+    isLoading,
+    sendMessage,
+    handleKeyPress,
+  } = useChat(messagesHook);
 
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto border-0 rounded-none overflow-hidden bg-white shadow-none md:border md:border-gray-300 md:rounded-lg md:shadow-lg">
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 md:p-5 text-center">
-        <h2 className="m-0 mb-2 text-xl md:text-2xl">
-          BongoDevElectronics - ThinkPad Assistant
-        </h2>
-        <p className="m-0 opacity-90 text-sm">Ask me about Lenovo ThinkPads!</p>
+    <div className="flex flex-col h-screen w-full max-w-4xl mx-auto border-0 rounded-none overflow-hidden bg-white shadow-none md:border md:border-gray-300 md:rounded-lg md:shadow-lg">
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 md:p-5">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex-1 text-center">
+            <h2 className="m-0 text-xl md:text-2xl">
+              BongoDevElectronics - ThinkPad Assistant
+            </h2>
+          </div>
+          <button
+            onClick={clearMessages}
+            disabled={isLoading}
+            className="bg-white/20 hover:bg-white/30 text-white border border-white/30 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            New Chat
+          </button>
+        </div>
+        <p className="m-0 opacity-90 text-sm text-center">Ask me about Lenovo ThinkPads!</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 bg-gray-50">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 bg-gray-50 min-w-0">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -91,7 +47,13 @@ const ChatInterface = () => {
                   : "bg-white text-gray-800 border border-gray-300 rounded-bl-md"
               }`}
             >
-              <div className="leading-relaxed break-words">{message.text}</div>
+              <div className="leading-relaxed break-words overflow-wrap-anywhere">
+                {message.sender === "bot" ? (
+                  <MarkdownRenderer content={message.text} />
+                ) : (
+                  message.text
+                )}
+              </div>
               <div className="text-xs opacity-70 mt-1">
                 {message.timestamp.toLocaleTimeString()}
               </div>
@@ -100,7 +62,7 @@ const ChatInterface = () => {
         ))}
         {isLoading && (
           <div className="mb-4 flex justify-start">
-            <div className="max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl relative bg-white text-gray-800 border border-gray-300 rounded-bl-md">
+            <div className="max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl relative bg-white text-gray-800 border border-gray-300 rounded-bl-md min-w-0">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></span>
                 <span
